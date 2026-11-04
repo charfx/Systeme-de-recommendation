@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Films recommandés</title>
+  <meta name="description" content="Classement global de films produit par un modèle LightGBM LambdaRank.">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="hero">
+    <div class="container">
+      <p class="eyebrow">Démonstration sur données historiques</p>
+      <h1>Films recommandés</h1>
+      <p class="lead">Classement global basé sur la popularité et les évaluations historiques</p>
+      <dl class="meta" id="meta" hidden>
+        <div>
+          <dt>Date de référence</dt>
+          <dd><time id="reference-date"></time></dd>
+        </div>
+        <div>
+          <dt>Type de classement</dt>
+          <dd>Global, non personnalisé</dd>
+        </div>
+      </dl>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="status" class="status" role="status" aria-live="polite">
+      <div class="spinner" aria-hidden="true"></div>
+      <p>Chargement des recommandations…</p>
+    </section>
+
+    <section id="error" class="notice notice-error" role="alert" hidden>
+      <h2>Impossible de charger les recommandations</h2>
+      <p id="error-message"></p>
+      <button type="button" id="retry" class="button">Réessayer</button>
+    </section>
+
+    <section id="empty" class="notice" hidden>
+      <h2>Aucune recommandation disponible</h2>
+      <p>Aucun film ne remplit les conditions d’éligibilité à cette date de référence.</p>
+    </section>
+
+    <ol id="grid" class="grid" hidden></ol>
+
+    <p class="score-note" id="score-note" hidden>
+      <strong>Score du modèle</strong> : valeur relative produite par le modèle de classement,
+      utile uniquement pour ordonner les films. Ce n’est ni une note sur 5 ni une probabilité.
+    </p>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      Projet pédagogique · LightGBM LambdaRank · données MovieLens jusqu’en 2018
+    </div>
+  </footer>
+
+  <template id="card-template">
+    <li class="card">
+      <div class="poster" aria-hidden="true">
+        <span class="poster-rank"></span>
+        <span class="poster-year"></span>
+      </div>
+      <div class="card-body">
+        <p class="rank"></p>
+        <h3 class="title"></h3>
+        <ul class="genres"></ul>
+        <p class="score"><span class="score-label">Score du modèle</span> <span class="score-value"></span></p>
+      </div>
+    </li>
+  </template>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
