@@ -3,20 +3,24 @@
     GET  /books                          page HTML
     GET  /api/books/discovery            sélection courante (créée si absente)
     POST /api/books/discovery/refresh    nouveau tirage
+    GET  /api/books/recommendations      recommandations TF-IDF de la session
     GET  /api/books?query=&page=&page_size=   recherche par titre
     GET  /api/books/{book_id}            fiche complète + état pour la session
     POST /api/book-events                enregistre une interaction (open, like…)
 
-Les routes fixes « /api/books/discovery… » sont déclarées AVANT
-« /api/books/{book_id} » : sinon « discovery » serait pris pour un book_id.
+Les routes fixes (« /api/books/discovery… », « /api/books/recommendations »)
+sont déclarées AVANT « /api/books/{book_id} » : sinon « discovery » ou
+« recommendations » serait pris pour un book_id.
 """
 
 import logging
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
+from functools import lru_cache
 from typing import Literal
 
+import pymysql
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, ConfigDict, Field
@@ -84,6 +88,60 @@ def refresh_discovery(request: Request, response: Response):
         session_id = current_session(conn, request, response)
         selection_id = discovery.refresh_selection(conn, session_id)
         return discovery.selection_payload(conn, session_id, selection_id)
+
+
+# ----------------------------------------------- recommandations TF-IDF
+
+@lru_cache(maxsize=1)
+def get_book_recommender():
+    """Chargé une seule fois, à la première requête (pas au démarrage).
+
+    Si le chargement échoue, rien n'est mis en cache : on réessaiera.
+    """
+    from Books_recommendation.Book_recommender import BookRecommender
+    return BookRecommender()
+
+
+@router.get("/api/books/recommendations")
+def get_book_recommendations(
+    request: Request,
+    top_k: int = Query(4, ge=1, le=50),
+):
+    session_id = request.cookies.get(COOKIE_NAME)  # "books_session"
+    if not session_id:
+        raise HTTPException(
+            status_code=401,
+            detail="Session absente. Chargez d'abord la page livres.",
+        )
+
+    try:
+        recommender = get_book_recommender()
+    except (FileNotFoundError, ValueError):
+        logger.exception("Chargement du modèle TF-IDF impossible")
+        raise HTTPException(
+            status_code=503,
+            detail="Modèle de recommandation indisponible.",
+        ) from None
+
+    try:
+        result = recommender.recommend(session_id=session_id, top_k=top_k)
+    except ValueError as exc:  # session inconnue, top_k invalide
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except pymysql.MySQLError:
+        logger.exception("Erreur MySQL pendant la recommandation")
+        raise HTTPException(
+            status_code=503,
+            detail="Base de données indisponible.",
+        ) from None
+
+    # Même format que les autres cartes de l'API (listes, image en HTTPS).
+    # La description complète n'est pas utile ici : la fiche la recharge.
+    for book in result["recommendations"]:
+        book["authors"] = catalog.split_list(book.get("authors"))
+        book["categories"] = catalog.split_list(book.get("categories"))
+        book["thumbnail"] = catalog.safe_thumbnail(book.get("thumbnail"))
+        book.pop("description", None)
+    return result
 
 
 # ------------------------------------------------------------- catalogue

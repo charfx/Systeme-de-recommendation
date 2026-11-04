@@ -168,6 +168,16 @@
   cursor: pointer;
 }
 
+/* ------------------------------------------------- recommandations */
+.reco-section { margin-top: 48px; }
+.reco-hint { margin: 4px 0 0; color: var(--muted); font-size: .88rem; }
+.book-score {
+  margin: 0;
+  color: var(--muted);
+  font-size: .78rem;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---------------------------------------------------------- recherche */
 .search-section { margin-top: 48px; }
 .search-form { display: flex; gap: 8px; margin: 14px 0 16px; }

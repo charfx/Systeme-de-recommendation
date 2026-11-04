@@ -1230,6 +1230,7 @@ dependencies = [
     { name = "pymysql" },
     { name = "python-dotenv" },
     { name = "scikit-learn" },
+    { name = "scipy" },
     { name = "sqlalchemy" },
     { name = "uvicorn" },
 ]
@@ -1246,6 +1247,7 @@ requires-dist = [
     { name = "pymysql", specifier = ">=1.2.3" },
     { name = "python-dotenv", specifier = ">=1.2.4" },
     { name = "scikit-learn", specifier = ">=1.9.1" },
+    { name = "scipy", specifier = ">=1.18.1" },
     { name = "sqlalchemy", specifier = ">=2.0" },
     { name = "uvicorn", specifier = ">=0.54.0" },
 ]

@@ -12,14 +12,14 @@ DETAIL_COLUMNS = (
 )
 
 
-def _split_list(value: str | None) -> list[str]:
+def split_list(value: str | None) -> list[str]:
     """« Charles Osborne;Agatha Christie » -> ["Charles Osborne", "Agatha Christie"]."""
     if not value:
         return []
     return [part.strip() for part in value.split(";") if part.strip()]
 
 
-def _safe_thumbnail(url: str | None) -> str | None:
+def safe_thumbnail(url: str | None) -> str | None:
     """N'accepte que des URL http(s) ; passe Google Books en HTTPS."""
     if not url:
         return None
@@ -36,9 +36,9 @@ def serialize_card(row) -> dict:
         "book_id": row["book_id"],
         "title": row["title"],
         "subtitle": row["subtitle"],
-        "authors": _split_list(row["authors"]),
-        "categories": _split_list(row["categories"]),
-        "thumbnail": _safe_thumbnail(row["thumbnail"]),
+        "authors": split_list(row["authors"]),
+        "categories": split_list(row["categories"]),
+        "thumbnail": safe_thumbnail(row["thumbnail"]),
         "published_year": row["published_year"],
     }
 

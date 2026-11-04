@@ -30,6 +30,14 @@
     grid: $("book-grid"),
     cardTemplate: $("book-card-template"),
 
+    recoStatus: $("reco-status"),
+    recoError: $("reco-error"),
+    recoErrorMessage: $("reco-error-message"),
+    recoRetry: $("reco-retry"),
+    recoEmpty: $("reco-empty"),
+    recoEmptyMessage: $("reco-empty-message"),
+    recoGrid: $("reco-grid"),
+
     searchForm: $("search-form"),
     searchInput: $("search-input"),
     searchStatus: $("search-status"),
@@ -215,6 +223,7 @@
     try {
       const result = await sendBookEvent(bookId, eventType);
       bookStates.set(bookId, result.state);
+      scheduleRecommendations(); // le profil a changé : recalcul
     } catch (err) {
       failures.set(bookId, { eventType, message: errorMessage(err) });
     } finally {
@@ -229,6 +238,7 @@
     renderBookState(bookId);
     try {
       await sendBookEvent(bookId, "open");
+      scheduleRecommendations(); // une ouverture compte aussi dans le profil
     } catch (err) {
       // Une autre action en échec garde la priorité d'affichage.
       if (!failures.has(bookId)) {
@@ -361,7 +371,68 @@
     node.querySelector(".book-title").textContent = book.title;
     node.querySelector(".book-authors").textContent = joinList(book.authors) || "Auteur inconnu";
     node.querySelector('[data-action="open"]').setAttribute("aria-label", `Voir le livre : ${book.title}`);
+    if (typeof book.score === "number") {
+      const score = node.querySelector(".book-score");
+      score.textContent = `Similarité ${scoreFormat.format(book.score)}`;
+      score.hidden = false;
+    }
     return node;
+  }
+
+  const scoreFormat = new Intl.NumberFormat("fr-FR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  /* ------------------------------------------- recommandations TF-IDF */
+
+  const RECO_TOP_K = 4;
+  let recoToken = 0;
+  let recoTimer = null;
+
+  function showReco(state) {
+    els.recoStatus.hidden = state !== "loading";
+    els.recoError.hidden = state !== "error";
+    els.recoEmpty.hidden = state !== "empty";
+    // Pendant un recalcul, on garde les anciennes cartes visibles.
+    if (state !== "loading") els.recoGrid.hidden = state !== "results";
+  }
+
+  // Plusieurs clics rapprochés -> un seul recalcul.
+  function scheduleRecommendations() {
+    clearTimeout(recoTimer);
+    recoTimer = setTimeout(loadRecommendations, 250);
+  }
+
+  async function loadRecommendations() {
+    const token = ++recoToken;
+    showReco("loading");
+    try {
+      const data = await requestJson(`/api/books/recommendations?top_k=${RECO_TOP_K}`);
+      if (token !== recoToken) return; // une réponse plus récente est attendue
+
+      if (data.status === "cold_start" || data.status === "no_candidates" || data.count === 0) {
+        els.recoEmptyMessage.textContent = data.status === "cold_start"
+          ? "Aimez ou ouvrez au moins un livre pour obtenir des recommandations."
+          : "Aucun autre livre similaire à proposer pour l’instant.";
+        showReco("empty");
+        return;
+      }
+      const fragment = document.createDocumentFragment();
+      for (const book of data.recommendations) fragment.appendChild(renderCard(book));
+      els.recoGrid.replaceChildren(fragment);
+      for (const book of data.recommendations) renderBookState(book.book_id);
+      showReco("results");
+    } catch (err) {
+      if (token !== recoToken) return;
+      if (err.status === 401) {
+        els.recoEmptyMessage.textContent = "Aimez ou ouvrez au moins un livre pour obtenir des recommandations.";
+        showReco("empty");
+        return;
+      }
+      els.recoErrorMessage.textContent = errorMessage(err);
+      showReco("error");
+    }
   }
 
   async function loadDiscovery(mode) {
@@ -517,6 +588,7 @@
 
   // Listeners délégués : attachés UNE fois, jamais dans une fonction de rendu.
   els.grid.addEventListener("click", handleBookAction);
+  els.recoGrid.addEventListener("click", handleBookAction);
   els.searchResults.addEventListener("click", handleBookAction);
   els.dialog.addEventListener("click", handleBookAction);
 
@@ -533,9 +605,11 @@
     search.query = els.searchInput.value.trim();
     runSearch(1);
   });
+  els.recoRetry.addEventListener("click", loadRecommendations);
   els.searchRetry.addEventListener("click", () => runSearch(search.page));
   els.searchPrev.addEventListener("click", () => runSearch(search.page - 1));
   els.searchNext.addEventListener("click", () => runSearch(search.page + 1));
 
-  loadDiscovery("load");
+  // La sélection crée le cookie de session ; les recommandations viennent après.
+  loadDiscovery("load").then(loadRecommendations);
 })();

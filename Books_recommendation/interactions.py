@@ -158,7 +158,10 @@ def record_book_event(
         except IntegrityError:
             # Deux envois simultanés du même request_id : la contrainte
             # UNIQUE (session_id, request_id) a bloqué le second.
-            original = _find_by_request_id(conn, session_id, request_id)
+            # Lecture verrouillante : en REPEATABLE READ, une lecture simple
+            # utiliserait l'instantané de la transaction, qui ne contient pas
+            # encore la ligne validée par l'autre requête.
+            original = _find_by_request_id(conn, session_id, request_id, latest=True)
             if original is None:
                 raise
             duplicate = True
@@ -169,11 +172,14 @@ def record_book_event(
     return state_for(conn, session_id, book_id), duplicate
 
 
-def _find_by_request_id(conn: Connection, session_id: str, request_id: str):
+def _find_by_request_id(conn: Connection, session_id: str, request_id: str, latest: bool = False):
+    sql = """
+        SELECT book_id, event_type FROM book_events
+        WHERE session_id = :session_id AND request_id = :request_id
+    """
+    if latest:
+        sql += " LOCK IN SHARE MODE"  # lit la dernière version validée
     return conn.execute(
-        text("""
-            SELECT book_id, event_type FROM book_events
-            WHERE session_id = :session_id AND request_id = :request_id
-        """),
+        text(sql),
         {"session_id": session_id, "request_id": request_id},
     ).mappings().first()

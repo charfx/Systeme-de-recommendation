@@ -43,7 +43,7 @@ print(
 )
 from pathlib import Path
 
-output_path = Path("Books_recommendation/data/books_clean.csv")
+output_path = Path(__file__).resolve().parent / "data" / "books_clean.csv"
 output_path.parent.mkdir(parents=True, exist_ok=True)
 
 books_clean.to_csv(

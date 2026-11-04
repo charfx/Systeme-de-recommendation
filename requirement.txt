@@ -9,3 +9,4 @@ uvicorn
 sqlalchemy
 pymysql
 python-dotenv
+scipy

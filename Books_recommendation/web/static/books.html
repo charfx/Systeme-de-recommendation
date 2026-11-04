@@ -57,6 +57,34 @@
       <ul id="book-grid" class="book-grid" hidden></ul>
     </section>
 
+    <!-- ================= Recommandations TF-IDF ================= -->
+    <section class="reco-section" aria-labelledby="reco-heading">
+      <div class="section-head">
+        <div>
+          <h2 id="reco-heading">Recommandés pour vous</h2>
+          <p class="reco-hint">Calculés à partir des livres que vous aimez (poids 4) ou ouvrez (poids 1).
+            Mis à jour après chaque interaction.</p>
+        </div>
+      </div>
+
+      <div id="reco-status" class="status" role="status" aria-live="polite" hidden>
+        <div class="spinner" aria-hidden="true"></div>
+        <p>Calcul des recommandations…</p>
+      </div>
+
+      <div id="reco-error" class="notice notice-error" role="alert" hidden>
+        <p id="reco-error-message"></p>
+        <button type="button" id="reco-retry" class="button">Réessayer</button>
+      </div>
+
+      <div id="reco-empty" class="notice" hidden>
+        <p id="reco-empty-message"></p>
+      </div>
+
+      <!-- Même gabarit de carte et même listener délégué que la sélection. -->
+      <ul id="reco-grid" class="book-grid" hidden></ul>
+    </section>
+
     <!-- ========================= Recherche ========================= -->
     <section class="search-section" aria-labelledby="search-heading">
       <h2 id="search-heading">Retrouver un livre</h2>
@@ -135,6 +163,7 @@
         <p class="book-category"></p>
         <h3 class="book-title"></h3>
         <p class="book-authors"></p>
+        <p class="book-score" hidden></p>
         <p class="book-badge" hidden></p>
         <div class="book-actions">
           <button type="button" class="action action-open" data-action="open">Voir le livre</button>

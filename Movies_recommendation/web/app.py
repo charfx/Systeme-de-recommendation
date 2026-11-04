@@ -101,6 +101,20 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(title="Films recommandés", lifespan=lifespan)
 
 
+@app.middleware("http")
+async def no_stale_frontend(request, call_next):
+    """Pages et fichiers statiques : le navigateur revérifie à chaque chargement.
+
+    Sans cela, il peut garder un ancien books.js en cache après une
+    modification, et la page semble « ne pas changer ».
+    """
+    response = await call_next(request)
+    path = request.url.path
+    if path in ("/", "/books") or path.startswith("/static/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 @app.get("/api/recommendations")
 def get_recommendations():
     if STATE["error"] is not None or STATE["payload"] is None:

@@ -138,3 +138,24 @@ top_terms = (
 
 print("\nLivre :", books_clean.iloc[book_position]["title"])
 print(top_terms.to_string(index=False))
+from pathlib import Path
+import joblib
+
+artifact_path = Path(__file__).resolve().parent / "artifacts" / "books_tfidf.joblib"
+artifact_path.parent.mkdir(parents=True, exist_ok=True)
+
+book_ids = books_clean["book_id"].astype(str).tolist()
+
+assert len(book_ids) == tfidf_matrix.shape[0]
+assert len(book_ids) == len(set(book_ids))
+
+joblib.dump(
+    {
+        "vectorizer": tfidf_vectorizer,
+        "matrix": tfidf_matrix.tocsr(),
+        "book_ids": book_ids,
+    },
+    artifact_path
+)
+
+print("Artefacts sauvegardés :", artifact_path.resolve())
