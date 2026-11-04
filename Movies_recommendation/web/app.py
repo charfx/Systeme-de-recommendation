@@ -20,6 +20,9 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from Books_recommendation.web.api import BOOKS_STATIC_DIR
+from Books_recommendation.web.api import router as books_router
+
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 TOP_K = 10
 
@@ -116,4 +119,11 @@ def index():
     return FileResponse(STATIC_DIR / "index.html")
 
 
+# Module livres : page /books et routes /api/books…, /api/book-events.
+# La connexion MySQL n'est ouverte qu'à la première requête livres : la page
+# films reste utilisable même si MySQL est arrêté.
+app.include_router(books_router)
+
+# "/static/books" doit être monté avant "/static", plus général.
+app.mount("/static/books", StaticFiles(directory=BOOKS_STATIC_DIR), name="books_static")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

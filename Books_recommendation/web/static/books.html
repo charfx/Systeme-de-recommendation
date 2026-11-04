@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Livres à découvrir</title>
+  <meta name="description" content="Cinq livres tirés au hasard ; vos interactions sont enregistrées pour de futures recommandations.">
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/books/books.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="Modules">
+    <div class="container">
+      <a href="/">Films</a>
+      <a href="/books" aria-current="page">Livres</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="container">
+      <p class="eyebrow">Étape 1 · collecte des interactions</p>
+      <h1>Livres à découvrir</h1>
+      <p class="lead">
+        Cinq livres tirés au hasard dans un catalogue de 6 548 titres. Ouvrez une fiche,
+        aimez ou écartez un livre : vos choix serviront plus tard à vous recommander des lectures.
+      </p>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- ======================= Sélection aléatoire ======================= -->
+    <section aria-labelledby="discovery-heading">
+      <div class="section-head">
+        <h2 id="discovery-heading">Votre sélection</h2>
+        <button type="button" id="refresh" class="button button-accent">Découvrir d’autres livres</button>
+      </div>
+
+      <div id="discovery-status" class="status" role="status" aria-live="polite">
+        <div class="spinner" aria-hidden="true"></div>
+        <p>Chargement des livres…</p>
+      </div>
+
+      <div id="discovery-error" class="notice notice-error" role="alert" hidden>
+        <h2>Impossible de charger les livres</h2>
+        <p id="discovery-error-message"></p>
+        <button type="button" id="discovery-retry" class="button">Réessayer</button>
+      </div>
+
+      <div id="discovery-empty" class="notice" hidden>
+        <h2>Aucun livre à proposer</h2>
+        <p>Tous les livres disponibles ont été écartés. Annulez un rejet depuis la recherche pour en revoir.</p>
+      </div>
+
+      <p id="discovery-partial" class="partial-note" hidden></p>
+
+      <!-- Conteneur des cartes : UN SEUL listener délégué (voir books.js). -->
+      <ul id="book-grid" class="book-grid" hidden></ul>
+    </section>
+
+    <!-- ========================= Recherche ========================= -->
+    <section class="search-section" aria-labelledby="search-heading">
+      <h2 id="search-heading">Retrouver un livre</h2>
+      <form id="search-form" class="search-form" role="search">
+        <label for="search-input" class="visually-hidden">Titre du livre</label>
+        <input id="search-input" name="query" type="search" placeholder="Rechercher par titre…"
+               maxlength="200" autocomplete="off">
+        <button type="submit" class="button">Rechercher</button>
+      </form>
+
+      <div id="search-status" class="status" role="status" aria-live="polite" hidden>
+        <div class="spinner" aria-hidden="true"></div>
+        <p>Recherche…</p>
+      </div>
+      <div id="search-error" class="notice notice-error" role="alert" hidden>
+        <p id="search-error-message"></p>
+        <button type="button" id="search-retry" class="button">Réessayer</button>
+      </div>
+      <p id="search-summary" class="search-summary" hidden></p>
+
+      <ul id="search-results" class="search-results" hidden></ul>
+
+      <nav id="search-pagination" class="pagination" aria-label="Pages de résultats" hidden>
+        <button type="button" id="search-prev" class="button button-ghost">← Précédent</button>
+        <span id="search-page-info"></span>
+        <button type="button" id="search-next" class="button button-ghost">Suivant →</button>
+      </nav>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      Projet pédagogique · tirage aléatoire, sans recommandation pour l’instant ·
+      les livres affichés sont « servis », pas forcément lus.
+    </div>
+  </footer>
+
+  <!-- ========================= Fiche livre ========================= -->
+  <dialog id="book-dialog" class="book-dialog" aria-labelledby="dialog-title">
+    <div class="dialog-inner">
+      <button type="button" class="dialog-close" data-action="close" aria-label="Fermer">×</button>
+
+      <div id="dialog-loading" class="status"><div class="spinner" aria-hidden="true"></div><p>Chargement de la fiche…</p></div>
+      <div id="dialog-error" class="notice notice-error" hidden>
+        <p id="dialog-error-message"></p>
+        <button type="button" class="button" data-action="open">Réessayer</button>
+      </div>
+
+      <article id="dialog-content" class="dialog-content" hidden>
+        <div class="dialog-cover cover-slot"></div>
+        <div class="dialog-body">
+          <p class="book-category dialog-categories"></p>
+          <h2 id="dialog-title" class="dialog-title"></h2>
+          <p class="dialog-subtitle"></p>
+          <p class="book-authors dialog-authors"></p>
+          <dl class="dialog-meta"></dl>
+
+          <div class="book-actions">
+            <button type="button" class="action action-like" data-role="like" data-action="like" aria-pressed="false">J’aime</button>
+            <button type="button" class="action action-dismiss" data-role="dismiss" data-action="dismiss" aria-pressed="false">Pas intéressé</button>
+          </div>
+          <div class="book-feedback" role="status" aria-live="polite" hidden></div>
+
+          <h3 class="dialog-section">Description</h3>
+          <p class="dialog-description"></p>
+        </div>
+      </article>
+    </div>
+  </dialog>
+
+  <!-- ========================= Gabarits ========================= -->
+  <template id="book-card-template">
+    <li class="book-card" data-book-id="">
+      <div class="cover-slot"></div>
+      <div class="book-body">
+        <p class="book-category"></p>
+        <h3 class="book-title"></h3>
+        <p class="book-authors"></p>
+        <p class="book-badge" hidden></p>
+        <div class="book-actions">
+          <button type="button" class="action action-open" data-action="open">Voir le livre</button>
+          <button type="button" class="action action-like" data-role="like" data-action="like" aria-pressed="false">J’aime</button>
+          <button type="button" class="action action-dismiss" data-role="dismiss" data-action="dismiss" aria-pressed="false">Pas intéressé</button>
+        </div>
+        <div class="book-feedback" role="status" aria-live="polite" hidden></div>
+      </div>
+    </li>
+  </template>
+
+  <template id="search-row-template">
+    <li class="search-row" data-book-id="">
+      <div class="cover-slot cover-small"></div>
+      <div class="search-row-body">
+        <p class="search-row-title"></p>
+        <p class="book-authors"></p>
+      </div>
+      <button type="button" class="action action-open" data-action="open">Voir le livre</button>
+    </li>
+  </template>
+
+  <script src="/static/books/books.js"></script>
+</body>
+</html>
